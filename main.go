@@ -1,34 +1,28 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
+	"encoding/json"
 	"log"
-	"os"
+	"net/http"
 
-	"github.com/joho/godotenv"
+	"github.com/gorilla/mux"
 
-	_ "github.com/go-sql-driver/mysql"
+	testdao "github.com/KazuwoKiwame12/WebAPI_with_DB/pkg/dao/test"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal(err)
-	}
+	r := mux.NewRouter()
+	// localhost:8080/shogi/で将棋の駒を確認することが出来る
+	r.HandleFunc("/shogi/", showShogiIndex)
+	log.Fatal(http.ListenAndServe(":8080", r))
+}
 
-	connStr := os.Getenv("DB_USER") + ":" + os.Getenv("DB_PASSWORD") + "@/" + os.Getenv("DB_NAME")
-	db, err := sql.Open("mysql", connStr)
+func showShogiIndex(w http.ResponseWriter, r *http.Request) {
+	shogi := testdao.FetchIndex()
+	//json形式に変換します
+	bytes, err := json.Marshal(shogi)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
-
-	id := 3
-	var name string
-	err = db.QueryRow("SELECT name FROM shogi WHERE id = ?", id).Scan(&name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(name)
+	w.Write([]byte(string(bytes)))
 }
